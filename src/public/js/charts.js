@@ -38,11 +38,11 @@ var objectsCharts = {
         data: {
             labels: ["Direct", "Referral", "Social"],
             datasets: [{
-            data: [55, 30, 15],
-            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
-            hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
-            hoverBorderColor: "rgba(234, 236, 244, 1)",
-            }],
+                        data: [55, 30, 15],
+                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
+                        hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+                        hoverBorderColor: "rgba(234, 236, 244, 1)",
+                      }],
         },
         options: {
             maintainAspectRatio: false,
@@ -152,31 +152,46 @@ var objectsCharts = {
 
 };
 
-function getPieChart(){
+   
+function getPieChart(year='Todos'){
 
-    $.getJSON("/js/jsonDataPieIndex.json", function(json) {
-        //console.log(json.datasets); // this will show the info it in firebug console
-        objectsCharts.myPieChart.data.labels = json.labels;
-        objectsCharts.myPieChart.data.datasets = json.datasets; 
-        //console.log(objectsCharts.myPieChart.data.labels);
-        //console.log(objectsCharts.myPieChart.data.datasets);
-        $("#subPieChartIndex").html(json.year);
+  $.ajax({
+    url: '/ajax/getPieChart',
+    method: 'POST',
+    data: {
+      year
+    },
+    success: function(response){
+
+     
+      if(response.status=="200"){
+        console.log(response);
+        $("#subPieChartIndex").html(response.year);
+        
+        objectsCharts.myPieChart.data.labels = response.labels;
+        objectsCharts.myPieChart.data.datasets[0].data = response.data; 
+        objectsCharts.myPieChart.data.datasets[0].backgroundColor = response.backgroundColor; 
+        objectsCharts.myPieChart.data.datasets[0].hoverBackgroundColor = response.hoverBackgroundColor; 
+
         let labels ="";
-        for (i in json.labels){
+        for (i in response.labels){
             labels = labels + `<span class="mr-2">
-                               <i class="fas fa-circle" style="color:${json.datasets[0].backgroundColor[i]}"></i> ${json.labels[i]}
+                               <i class="fas fa-circle" style="color:${response.backgroundColor[i]}"></i> ${response.labels[i]}
                                </span>`;
         }
 
         $("#labelsPie").html(labels);
-
-        // Pie Chart Example
         var ctx = document.getElementById("myPieChart");
         myPieChart = new Chart(ctx, objectsCharts.myPieChart);
-
-    });
-
-
+      }else{
+        //not found data
+        $("#subPieChartIndex").html("");
+        $("#labelsPie").html("!No se encontro información a graficar¡");
+      }
+    }
+  }).fail(function( jqXHR, textStatus, errorThrown ) {
+  console.log( jqXHR, textStatus, errorThrown);
+  });
 }
 
 function getLineChart(){
@@ -252,22 +267,43 @@ function fiterYearPieChart(year=''){
   }else{
     $("#subPieChartIndex").html(year);
   }
-
-  $.ajax({
-    url: '/ajax/filterYearPieChartIndex',
+  getPieChart(year);
+  /*$.ajax({
+    
+    url: '/ajax/getPieChart',
     method: 'POST',
     data: {
         year
     },
     success: function(response){
       if(response.status=="200"){
-   
-        getPieChart();
+        console.log(response);
+        $("#subPieChartIndex").html(response.year);
+        
+        objectsCharts.myPieChart.data.labels = response.labels;
+        objectsCharts.myPieChart.data.datasets[0].data = response.data; 
+        objectsCharts.myPieChart.data.datasets[0].backgroundColor = response.backgroundColor; 
+        objectsCharts.myPieChart.data.datasets[0].hoverBackgroundColor = response.hoverBackgroundColor; 
+
+        let labels ="";
+        for (i in response.labels){
+            labels = labels + `<span class="mr-2">
+                               <i class="fas fa-circle" style="color:${response.backgroundColor[i]}"></i> ${response.labels[i]}
+                               </span>`;
+        }
+
+        $("#labelsPie").html(labels);
+        var ctx = document.getElementById("myPieChart");
+        myPieChart = new Chart(ctx, objectsCharts.myPieChart);
+      }else{
+        
+        $("#subPieChartIndex").html("");
+        $("#labelsPie").html("!No se encontro información a graficar¡");
       }
     }
 }).fail(function( jqXHR, textStatus, errorThrown ) {
 console.log( jqXHR, textStatus, errorThrown);
-});
+});*/
 
   
 }

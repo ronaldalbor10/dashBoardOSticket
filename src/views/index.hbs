@@ -106,10 +106,11 @@
                                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                                             aria-labelledby="dropdownMenuLink">
                                             <div class="dropdown-header">Dropdown Header:</div>
+                                            {{#if (ifCond (lenArray years_chart) 0 true '>' )}}
                                              {{#each years_chart}}
                                             <a class="dropdown-item" href="#" onclick="fiterYearLineChart('{{this.year}}')">{{this.year}}</a>
                                             {{/each}}
-                                            
+                                            {{/if}}
                                             <div class="dropdown-divider"></div>
                                             <a class="dropdown-item" href="#" onclick="fiterYearLineChart()">Actualizar</a>
                                         </div>
@@ -139,16 +140,20 @@
                                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                                             aria-labelledby="dropdownMenuLink">
                                             <div class="dropdown-header">Dropdown Header:</div>
-                                      
+                                            {{#if (ifCond (lenArray years_chart) 0 true '>' )}}
                                              {{#each years_chart}}
                                             <a class="dropdown-item" href="#" onclick="fiterYearPieChart('{{this.year}}')" >{{this.year}}</a>
                                             {{/each}}
                                             <a class="dropdown-item" href="#" onclick="fiterYearPieChart('Todos')">Todo</a>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#" onclick="fiterYearPieChart()">Actualizar</a>
+                                            
+                                            
+
                                             <!--<a class="dropdown-item" href="#">Another action</a>
                                             <div class="dropdown-divider"></div>
                                             <a class="dropdown-item" href="#">Something else here</a>-->
+                                            {{/if}}
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="#" onclick="fiterYearPieChart()">Actualizar</a>
                                         </div>
                                     </div>
                                 </div>

@@ -3,6 +3,8 @@ const moment = require('./moment');
 const path = require('path');
 const  mailer  = require('../lib/mailer');
 const bcrypt = require('bcryptjs');
+const pool = require('../config/conexiondb');
+
 
 const helpers = {};
 
@@ -15,21 +17,89 @@ helpers.matchPassword = async(password,savePassword)=>{
    }
 };
 
+helpers.lenArray = async(array)=>{
+   console.log(array.length);
+   return array.length;
+};
+
+helpers.getInfoPieChart = async(user, year)=>{
+   //console.log(user,year);
+  
+
+   let filterUser = user.isadmin!=1 ? ` AND  t0.staff_id = ${user.staff_id} `:"";
+
+   let filterYear = year != "Todos"? ` AND YEAR(t0.created)=${year} `: "";
+
+   let subWhere = filterUser+filterYear;
+
+  
+   let sql_pie_ticket_x_servicio = `SELECT 
+                                        t4.value AS "Servicio", 
+                                        COUNT(t0.ticket_id) AS "TotalTickets"
+                                        FROM ost_ticket t0
+                                        INNER JOIN ost_thread t1 ON t0.ticket_id = t1.object_id AND t1.object_type='T'
+                                        INNER JOIN ost_form_entry t2 ON t1.object_type= t2.object_type AND t1.object_id =t2.object_id
+                                        INNER JOIN ost_form t3 ON t2.form_id = t3.id
+                                        INNER JOIN ost_form_entry_values t4 ON t2.id = t4.entry_id
+                                        INNER JOIN ost_ticket_status t5 ON t0.status_id = t5.id
+                                        WHERE 
+                                        t3.id = 18
+                                        AND t4.field_id=40
+                                        ${subWhere}
+                                        GROUP BY 
+                                        t4.value`;
+
+   //console.log(sql_pie_ticket_x_servicio);
+
+    const dataPieTicketsServicio = await pool.query(sql_pie_ticket_x_servicio);
+
+    let colorItem = "";
+    let labels =[];
+    let data = [];
+    let backgroundColor =[];
+    let hoverBackgroundColor = [];
+    let status = 200;
+    if(dataPieTicketsServicio.length > 0 ){
+
+      for(item in dataPieTicketsServicio){
+         jsonServicio = JSON.parse(dataPieTicketsServicio[item].Servicio)
+         for(j in jsonServicio){
+             //console.log(jsonServicio[j]);
+             labels.push(jsonServicio[j]);
+         }
+   
+         data.push(dataPieTicketsServicio[item].TotalTickets);
+         colorItem = '#'+Math.floor(Math.random()*16777215).toString(16);
+         backgroundColor.push(colorItem);
+         hoverBackgroundColor.push(colorItem);
+      }
+   
+    }else{
+      status = 500;
+    }
+    
+  let jsonInfoPie = {labels,data,backgroundColor,hoverBackgroundColor,year,status};
+
+  return jsonInfoPie;
+
+};
+
 helpers.timeago = (timestamp)=>{
     return format(timestamp);
  }
  
-helpers.ifCond = (v1, v2, optrue, compare="=")=>{
+helpers.ifCond = async(v1, v2, optrue, compare="=")=>{
    
-   switch (compare){
+    switch (compare){
          case "<":
-            return (parseInt(v1) < parseInt(v2)) ? optrue : '';
+            return await (parseInt(v1) < parseInt(v2)) ? optrue : '';
 
          case ">":
-            return (parseInt(v1) > parseInt(v2)) ? optrue : '';
+            console.log(v1,v2);
+            return await (parseInt(v1) > parseInt(v2)) ? optrue : '';
             
          default:
-            return (v1 == v2) ? optrue : '';
+            return await (v1 == v2) ? optrue : '';
    }
 
     

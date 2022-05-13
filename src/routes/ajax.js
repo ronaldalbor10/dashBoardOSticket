@@ -11,15 +11,23 @@ const pool = require('../config/conexiondb');
 
 
 router.post('/filterYearLineChartIndex',async (req, res)=>{
+    const user = req.user
     const { year } = req.body;
     const hoy = new Date();
     console.log(year);
+
+    let filterUser ="";
+    if(user.isadmin!=1){
+        filterUser = filterUser + ` AND t0.staff_id = ${user.staff_id} `;
+    }
+
+
     let sql_infoLineChart = `SELECT 
                                 YEAR(t0.created) AS "anio",
                                 MONTH(t0.created) AS "mes",
                                 COUNT(t0.ticket_id) AS "TotalTicket" 
                             FROM ost_ticket t0
-                            WHERE YEAR(t0.created) = ${year}
+                            WHERE YEAR(t0.created) = ${year} ${filterUser}
                             GROUP BY 
                             YEAR(t0.created),
                                 MONTH(t0.created)
@@ -49,7 +57,7 @@ let maxMonthLineChart = dataLineChart[0].mes;
     }
 
     
-    let jsonFileLineChart = path.join(__dirname,"../public/js/jsonDataAreaIndex.json");
+    let jsonFileLineChart = path.join(__dirname,`../public/js/jsonDataAreaIndex_${user.staff_id}.json`);
     let jsonInfoLineChart ;
    
     if(fs.existsSync(jsonFileLineChart)){
@@ -91,12 +99,17 @@ let maxMonthLineChart = dataLineChart[0].mes;
 });
 
 router.post('/filterYearPieChartIndex',async (req, res)=>{
-    
+    const user = req.user
     const { year } = req.body;
     const hoy = new Date();
     console.log(year);
 
-    let subWhere = year != "Todos"? ` AND YEAR(t0.created)=${year} `: "";
+    let filterUser ="";
+    if(user.isadmin!=1){
+        filterUser = filterUser + ` AND t0.staff_id = ${user.staff_id} `;
+    }
+
+    let subWhere = year != "Todos"? ` AND YEAR(t0.created)=${year} ${filterUser}`: "";
     
     let sql_pie_ticket_x_servicio = `SELECT 
                                         t4.value AS "Servicio", 
@@ -135,7 +148,7 @@ router.post('/filterYearPieChartIndex',async (req, res)=>{
         hoverBackgroundColor.push(colorItem);
     }
 
-    let jsonFilePieChart = path.join(__dirname,"../public/js/jsonDataPieIndex.json");
+    let jsonFilePieChart = path.join(__dirname,`../public/js/jsonDataPieIndex_${user.staff_id}.json`);
     let jsonInfoPieChart ;
     
     if(fs.existsSync(jsonFilePieChart)){
@@ -190,10 +203,8 @@ router.post('/filterYearPieChartIndex',async (req, res)=>{
 });
 
 router.post('/getCounterTickets',async (req, res)=>{
+    
     const {user, body } = req;
-
-    //console.log(user, body);
-
     let sql_years_chart = `SELECT DISTINCT YEAR(t0.created) as "year" FROM ost_ticket t0 ORDER BY 1 DESC`;
     let years_chart = await pool.query(sql_years_chart);
     let last_year = years_chart[0].year;
@@ -222,46 +233,71 @@ router.post('/getCounterTickets',async (req, res)=>{
     (COUNT(t0.ticket_id)/(SELECT COUNT(tt0.ticket_id) FROM ost_ticket tt0)*100) AS "porcentaje" 
     FROM ost_ticket t0
     
-    WHERE 
-    isoverdue = 1
-    ${filter==""? "":" AND "} ${filter}`;
+    
+    ${filter==""? " WHERE isoverdue = 1 ": filter+" AND  isoverdue = 1"}`;
+
+    //console.log(sql_status_tickets,sql_tickets_overdue);
    
     let json_status_ticket = [{open:[],closed:[],resolved:[], overdue:[]}];
     
     const status_tickets = await pool.query(sql_status_tickets);
     const tickets_overdue = await pool.query(sql_tickets_overdue);
 
+    //console.log(status_tickets,tickets_overdue);
+
     json_status_ticket[0].overdue.push(tickets_overdue[0]);
 
     //console.log(json_status_ticket);
 
-    for(item in status_tickets){
-       //console.log(status_tickets[item]);
-        
-        switch (status_tickets[item].name) {
-            case "Open":
-                json_status_ticket[0].open.push(status_tickets[item]);
-                break;
+    if(status_tickets.length > 0){
+        for(item in status_tickets){
+            //console.log(status_tickets[item]);
+             
+             switch (status_tickets[item].name) {
+                 case "Open":
+                     json_status_ticket[0].open.push(status_tickets[item]);
+                     break;
+     
+                 case "Resolved":
+                     json_status_ticket[0].resolved.push(status_tickets[item]);
+                     break;
+                 
+                 case "Closed":
+                     json_status_ticket[0].closed.push(status_tickets[item]);
+                     break;
+             }
+             
+         }
+     
+     
+         
+    }else{
 
-            case "Resolved":
-                json_status_ticket[0].resolved.push(status_tickets[item]);
-                break;
-            
-            case "Closed":
-                json_status_ticket[0].closed.push(status_tickets[item]);
-                break;
-        }
-        
+        json_status_ticket[0].open.push({"TotalStatusTicket":0,"TotalTickets":0,"porcentaje":0});
+        json_status_ticket[0].resolved.push({"TotalStatusTicket":0,"TotalTickets":0,"porcentaje":0});
+        json_status_ticket[0].closed.push({"TotalStatusTicket":0,"TotalTickets":0,"porcentaje":0});
     }
 
+    
     console.log(json_status_ticket[0].open[0].name);
-
 
 
     res.json({status:200,data:json_status_ticket});
 
 
 
+});
+
+router.post('/getPieChart',async (req, res)=>{
+    const {user, body } = req;
+    let year = body.year;
+    
+    let infoPieChart = await helpers.getInfoPieChart(user,year);
+
+    //console.log(infoPieChart);
+
+    res.json(infoPieChart);
+    
 });
 
 module.exports = router;

@@ -20,9 +20,15 @@ router.get("/",isLoggedIn,async(req, res)=>{
 
     const user = req.user;
 
-    let sql_years_chart = `SELECT DISTINCT YEAR(t0.created) as "year" FROM ost_ticket t0 ORDER BY 1 DESC`;
+    let filterUser ="";
+    if(user.isadmin!=1){
+        filterUser = filterUser + ` WHERE t0.staff_id = ${user.staff_id} `;
+    }
+
+    let sql_years_chart = `SELECT DISTINCT YEAR(t0.created) as "year" FROM ost_ticket t0 ${filterUser} ORDER BY 1 DESC`;
     let years_chart = await pool.query(sql_years_chart);
-    let last_year = years_chart[0].year;
+    console.log(years_chart);
+    //let last_year = years_chart[0].year;
     /*
     let sql_status_tickets = `SELECT 
     t1.id,
