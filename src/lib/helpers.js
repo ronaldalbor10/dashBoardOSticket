@@ -258,6 +258,8 @@ helpers.restarFechas = (fecha1, fecha2, opcionArestar) =>{
 }
 
 
+
+
 helpers.ipClient = async(req)=>{
    
    const ip = await (req.header('x-forwarded-for') || req.connection.remoteAddress);
